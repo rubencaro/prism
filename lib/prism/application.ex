@@ -6,6 +6,7 @@ defmodule Prism.Application do
   def start(_type, _args) do
     children = [
       {Plug.Adapters.Cowboy, scheme: :http, plug: Prism.Router, options: [port: 4001]},
+      Prism.Counter
     ]
 
     opts = [strategy: :one_for_one, name: Prism.Supervisor]
