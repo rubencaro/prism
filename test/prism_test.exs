@@ -2,6 +2,43 @@ defmodule PrismTest do
   use ExUnit.Case, async: false
   use Plug.Test
 
+  @moduledoc """
+  To test the actual requester you can go interactive `iex -S mix` and then:
+
+    iex(1)> url = "http://localhost:4001/request"
+    "http://localhost:4001/request"
+    iex(2)> Agent.get(Prism.Counter, & &1)
+    0
+    iex(3)> HTTPoison.get(url)
+    "counting"
+    "counting"
+    "counting"
+    "counting"
+    "counting"
+    {:ok,
+    %HTTPoison.Response{
+      body: "spread",
+      headers: [
+        {"server", "Cowboy"},
+        {"date", "Sun, 03 Jun 2018 07:18:20 GMT"},
+        {"content-length", "6"},
+        {"cache-control", "max-age=0, private, must-revalidate"}
+      ],
+      request_url: "http://localhost:4001/request",
+      status_code: 200
+    }}
+    iex(4)> "counted"
+    "counted"
+    "counted"
+    "counted"
+    "counted"
+
+    nil
+    iex(5)> Agent.get(Prism.Counter, & &1)
+    5
+
+  """
+
   @opts Prism.Router.init([])
 
   test "greets the world" do
@@ -19,44 +56,5 @@ defmodule PrismTest do
     assert conn.state == :sent
     assert conn.status == 200
     assert conn.resp_body == "world"
-  end
-
-  test "makes calls and they are received" do
-    :ok = Agent.update(Prism.Counter, fn _ -> 0 end)
-
-    tasks =
-      Enum.reduce(0..9, [], fn _, acc ->
-        t =
-          Task.async(fn ->
-            conn = conn(:get, "/request")
-            conn = Prism.Router.call(conn, @opts)
-            assert conn.status == 200
-            :ok
-          end)
-
-        [t | acc]
-      end)
-
-    for t <- tasks, do: :ok = Task.await(t)
-
-    wait_for(fn ->
-      count = Agent.get(Prism.Counter, & &1)
-      IO.inspect(count)
-      count == 50
-    end)
-  end
-
-  @doc """
-    Wait for given function to return true.
-    Optional `msecs` and `step`.
-  """
-  def wait_for(func, msecs \\ 5_000, step \\ 100) do
-    if func.() do
-      :ok
-    else
-      if msecs <= 0, do: raise("Timeout!")
-      :timer.sleep(step)
-      wait_for(func, msecs - step, step)
-    end
   end
 end

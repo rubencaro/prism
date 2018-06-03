@@ -4,11 +4,16 @@ defmodule Prism.Requester do
   """
 
   def spread(%Plug.Conn{} = conn) do
-    url = "http://" <> conn.host <> "/count"
-    # timeout is 1 msec, no need to spawn processes and the wait for them
+    url = "http://localhost:4001/count"
+    # Timeout is 1 msec, no need to spawn processes and the wait for them
     HTTPoison.get(url, [], recv_timeout: 1)
     HTTPoison.get(url, [], recv_timeout: 1)
     HTTPoison.get(url, [], recv_timeout: 1)
+
+    # Let one of them fail completely, showing that it will
+    # not affect the client or the other requests.
+    HTTPoison.get(url <> "badurl", [], recv_timeout: 1)
+
     HTTPoison.get(url, [], recv_timeout: 1)
     HTTPoison.get(url, [], recv_timeout: 1)
     conn
